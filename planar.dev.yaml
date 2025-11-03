@@ -1,0 +1,43 @@
+db_connections:
+  app:
+    driver: sqlite+aiosqlite
+    path: demo.db
+
+app:
+  db_connection: app
+
+storage:
+  backend: localdir
+  directory: .files
+
+sse_hub: true
+security:
+  cors:
+    allow_origins: ["https://app.coplane.com"]
+    allow_credentials: true
+    allow_methods: ["*"]
+    allow_headers: ["*"]
+
+ai_providers:
+  openai:
+    api_key: ${OPENAI_API_KEY}
+
+logging:
+  planar:
+    level: INFO # enable INFO level logging for all modules in the "planar" package.
+  # Uncomment the following two lines to see SQL statements
+  # sqlalchemy.engine:  
+  #   level: INFO
+  # The root logger is represented by an empty string, so you can uncomment
+  # the following lines to enable INFO level for the whole application (except sqlalchemy.engine, which must be enabled above)
+  # "":
+  #  level: INFO
+
+# Uncomment to enable data features with Ducklake
+# data:
+#   catalog:
+#     type: sqlite
+#     path: .data/catalog.sqlite
+#   storage:
+#     backend: localdir
+#     directory: .data/ducklake_files

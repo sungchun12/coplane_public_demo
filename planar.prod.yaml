@@ -1,0 +1,46 @@
+db_connections:
+  app:
+    driver: postgresql+asyncpg
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    user: ${DB_USER}
+    password: ${DB_PASSWORD}
+    db: ${DB_NAME}
+
+app:
+  db_connection: app
+
+storage:
+  backend: s3
+  region: us-west-2
+  bucket_name: ${S3_BUCKET_NAME}
+
+sse_hub: true
+
+security:
+  cors:
+    allow_origins: ["https://app.coplane.com"]
+    allow_credentials: true
+    allow_methods: ["*"]
+    allow_headers: ["*"]
+  jwt:
+    client_id: ${WORKOS_CLIENT_ID}
+    org_id: ${WORKOS_ORG_ID}
+
+ai_providers:
+  openai:
+    api_key: ${OPENAI_API_KEY}
+
+# Uncomment to enable data features with Ducklake
+# data:
+#   catalog:
+#     type: postgres
+#     host: ${DB_HOST}
+#     port: ${DB_PORT}
+#     user: ${DB_USER}
+#     password: ${DB_PASSWORD}
+#     db: ducklake_catalog
+#   storage:
+#     backend: s3
+#     region: us-west-2
+#     bucket_name: ${S3_DATA_BUCKET}
