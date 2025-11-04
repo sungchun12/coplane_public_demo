@@ -106,6 +106,6 @@ async def process_invoice_with_entity(invoice_file: PlanarFile) -> Invoice:
     invoice = await extract_invoice(invoice_file)
     unique_invoice = await verify_unique_invoice_step(invoice)
     if unique_invoice.approved:
-        return await maybe_approve(invoice)
+        return await maybe_approve(invoice) # this will be properly skipped if unique_invoice.approved is False
 #### Workflow Definition ####
 
