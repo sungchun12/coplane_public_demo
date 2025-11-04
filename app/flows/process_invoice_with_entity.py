@@ -21,10 +21,6 @@ from typing import Any, List
 #     vendor: str
 #     amount: float
 
-class VerifyDuplicateInvoice(BaseModel):
-    is_duplicate: bool
-    reason: str
-
 # rule to make sure the input only allows float values
 class RuleInput(BaseModel):
     amount: float
@@ -57,9 +53,15 @@ human_review = Human(
 
 # TODO: create a rule to verify if the invoice is a duplicate
 # run the query within the rule
-@rule(description="Verify if the invoice is a duplicate")
-def verify_duplicate_invoice_rule(invoice: Invoice) -> VerifyDuplicateInvoice:
-    return VerifyDuplicateInvoice(is_duplicate=invoice.invoice_number in historical_invoice_numbers, reason=f"Invoice number {invoice.invoice_number} is a duplicate")
+# I don't think I can do this in a rule because the examples given cannot use async fuctions. I may need to ignore the rule decorator and use a step.
+# @rule(description="Verify if the invoice is a duplicate")
+# def verify_duplicate_invoice_rule(invoice: Invoice) -> RuleOutput:
+#     session = get_session()
+#     async with session.begin():
+#         stmt = select(Invoice).where(Invoice.invoice_number == invoice.invoice_number)
+#         historical_invoice_numbers = await session.exec(stmt)
+    
+#     return VerifyDuplicateInvoice(is_duplicate=invoice.invoice_number in historical_invoice_numbers, reason=f"Invoice number {invoice.invoice_number} is a duplicate")
 
 @rule(description="Auto approve invoices under $1000")
 def auto_approve(input: RuleInput) -> RuleOutput:
@@ -74,27 +76,25 @@ async def extract_invoice(invoice_file: PlanarFile) -> Invoice:
 
 # step 2
 # TODO: create a step to verify if the invoice is a duplicate
-@step(display_name="Verify duplicate invoice")
-async def verify_duplicate_invoice_step(invoice: Invoice) -> VerifyDuplicateInvoice:
+@step(display_name="Verify if unique invoice")
+async def verify_unique_invoice_step(invoice: Invoice) -> RuleOutput:
     # based on the input invoice number, query the database for an existing invoice
     # need to use SQLAlchemy to query the database
     session = get_session()
     async with session.begin():
         stmt = select(Invoice).where(Invoice.invoice_number == invoice.invoice_number)
-        historical_invoice_numbers = await session.exec(stmt)
-        # invoke the rule to verify if the invoice_number is a duplicate
-        duplicate_invoice = await verify_duplicate_invoice_rule(invoice, historical_invoice_numbers)
-    # if duplicate, return the duplicate invoice
-    if duplicate_invoice.is_duplicate:
-        return duplicate_invoice
+        historical_invoice_numbers = await session.exec(stmt) # TODO: verify this result -> Historical invoice numbers: []
+        print(f"Historical invoice numbers: {historical_invoice_numbers.all()}")
+    if invoice.invoice_number in historical_invoice_numbers:
+        return RuleOutput(approved=False, reason=f"Invoice number {invoice.invoice_number} is a duplicate")
     else:
-        return VerifyDuplicateInvoice(is_duplicate=False, reason=f"Invoice number {invoice.invoice_number} is NOT a duplicate")
+        return RuleOutput(approved=True, reason=f"Invoice number {invoice.invoice_number} is NOT a duplicate")
 
 # step 3
 @step(display_name="Maybe approve")
 async def maybe_approve(invoice: Invoice) -> Invoice:
     auto_approve_result = await auto_approve(RuleInput(amount=invoice.amount))
-    if auto_approve_result.approved: # RuleOutput.approved is a built-in boolean field
+    if auto_approve_result.approved: # RuleOutput.approved is defined above in a pydantic class
         return invoice
     reviewed_invoice = await human_review(invoice, suggested_data=invoice)
     return reviewed_invoice.output
@@ -103,11 +103,9 @@ async def maybe_approve(invoice: Invoice) -> Invoice:
 #### Workflow Definition ####
 @workflow()
 async def process_invoice_with_entity(invoice_file: PlanarFile) -> Invoice:
-    invoice = await extract_invoice[Any, Any, Invoice](invoice_file)
-    duplicate_invoice = await verify_duplicate_invoice_step(invoice)
-    if duplicate_invoice.is_duplicate:
-        return duplicate_invoice
-    else:
+    invoice = await extract_invoice(invoice_file)
+    unique_invoice = await verify_unique_invoice_step(invoice)
+    if unique_invoice.approved:
         return await maybe_approve(invoice)
 #### Workflow Definition ####
 
