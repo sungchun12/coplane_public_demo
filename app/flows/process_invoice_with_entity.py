@@ -77,18 +77,31 @@ async def extract_invoice(invoice_file: PlanarFile) -> Invoice:
 # step 2
 # TODO: create a step to verify if the invoice is a duplicate
 @step(display_name="Verify if unique invoice")
-async def verify_unique_invoice_step(invoice: Invoice) -> RuleOutput:
+async def verify_unique_invoice_step(invoice_input: Invoice) -> RuleOutput:
     # based on the input invoice number, query the database for an existing invoice
     # need to use SQLAlchemy to query the database
     session = get_session()
     async with session.begin():
-        stmt = select(Invoice).where(Invoice.invoice_number == invoice.invoice_number)
-        historical_invoice_numbers = await session.exec(stmt) # TODO: verify this result -> Historical invoice numbers: []
-        print(f"Historical invoice numbers: {historical_invoice_numbers.all()}")
-    if invoice.invoice_number in historical_invoice_numbers:
-        return RuleOutput(approved=False, reason=f"Invoice number {invoice.invoice_number} is a duplicate")
+        stmt = select(Invoice).where(Invoice.invoice_number == invoice_input.invoice_number)
+        result = await session.exec(stmt)
+        historical_invoices = result.scalars().all()  # Use scalars() to get ORM objects
+        print(f"Historical invoices: {historical_invoices}")
+        historical_invoice_numbers_list = [inv.invoice_number for inv in historical_invoices]
+        print(f"Historical invoice numbers: {historical_invoice_numbers_list}")
+    
+    # Check if the invoice number already exists
+    if invoice_input.invoice_number in historical_invoice_numbers_list:
+        return RuleOutput(approved=False, reason=f"Invoice number {invoice_input.invoice_number} is a duplicate")
     else:
-        return RuleOutput(approved=True, reason=f"Invoice number {invoice.invoice_number} is NOT a duplicate")
+        return RuleOutput(approved=True, reason=f"Invoice number {invoice_input.invoice_number} is NOT a duplicate")
+
+# step 3 write the invoice to the database
+@step(display_name="Write invoice to entity database")
+async def write_invoice_to_database(invoice: Invoice) -> Invoice:
+    session = get_session()
+    async with session.begin():
+        session.add(invoice)
+    return invoice
 
 # step 3
 @step(display_name="Maybe approve")
@@ -106,6 +119,7 @@ async def process_invoice_with_entity(invoice_file: PlanarFile) -> Invoice:
     invoice = await extract_invoice(invoice_file)
     unique_invoice = await verify_unique_invoice_step(invoice)
     if unique_invoice.approved:
+        await write_invoice_to_database(invoice)
         return await maybe_approve(invoice) # this will be properly skipped if unique_invoice.approved is False
 #### Workflow Definition ####
 
