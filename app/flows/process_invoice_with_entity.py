@@ -10,8 +10,8 @@ from sqlalchemy import select
 from typing import Any, List
 # Graph representation of the workflow: [process_invoice]
 # [HUMAN: Input the Invoice File as a file upload] -> [AGENT: invoice_agent] -> 
-# [STEP:extract_invoice] -> [STEP: maybe_approve] -> [RULE: auto_approve] -> 
-# [HUMAN: human_review if auto_approve is False] -> [OUTPUT: InvoiceData] ->
+# [STEP:extract_invoice] -> [STEP: verify_unique_invoice] -> [STEP: maybe_approve] -> 
+# [RULE: auto_approve] -> # [HUMAN: human_review if auto_approve is False] -> [OUTPUT: InvoiceData] ->
 # [Potential Step: write the InvoiceData to the database or general ledger like in netsuite]
 
 
@@ -75,7 +75,6 @@ async def extract_invoice(invoice_file: PlanarFile) -> Invoice:
     return result.output
 
 # step 2
-# TODO: create a step to verify if the invoice is a duplicate
 @step(display_name="Verify if unique invoice")
 async def verify_unique_invoice_step(invoice_input: Invoice) -> RuleOutput:
     # based on the input invoice number, query the database for an existing invoice
@@ -95,7 +94,7 @@ async def verify_unique_invoice_step(invoice_input: Invoice) -> RuleOutput:
     else:
         return RuleOutput(approved=True, reason=f"Invoice number {invoice_input.invoice_number} is NOT a duplicate")
 
-# step 3 write the invoice to the database
+# step 3
 @step(display_name="Write invoice to entity database")
 async def write_invoice_to_database(invoice: Invoice) -> Invoice:
     session = get_session()
@@ -103,7 +102,7 @@ async def write_invoice_to_database(invoice: Invoice) -> Invoice:
         session.add(invoice)
     return invoice
 
-# step 3
+# step 4
 @step(display_name="Maybe approve")
 async def maybe_approve(invoice: Invoice) -> Invoice:
     auto_approve_result = await auto_approve(RuleInput(amount=invoice.amount))
