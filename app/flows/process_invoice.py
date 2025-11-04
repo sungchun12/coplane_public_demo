@@ -6,7 +6,10 @@ from planar.workflows import step, workflow
 from pydantic import BaseModel
 
 # Graph representation of the workflow: [process_invoice]
-# [Input the Invoice File as a file upload] -> [invoice_agent] -> [extract_invoice] -> [maybe_approve] -> [Invoice Data]
+# [HUMAN: Input the Invoice File as a file upload] -> [AGENT: invoice_agent] -> 
+# [STEP:extract_invoice] -> [STEP: maybe_approve] -> [RULE: auto_approve] -> 
+# [HUMAN: human_review if auto_approve is False] -> [OUTPUT: InvoiceData] ->
+# [Potential Step: write the InvoiceData to the database or general ledger like in netsuite]
 
 
 #### Input and Output Type Definitions ####
@@ -61,7 +64,7 @@ async def extract_invoice(invoice_file: PlanarFile) -> InvoiceData:
 @step(display_name="Maybe approve")
 async def maybe_approve(invoice: InvoiceData) -> InvoiceData:
     auto_approve_result = await auto_approve(RuleInput(amount=invoice.amount))
-    if auto_approve_result.approved:
+    if auto_approve_result.approved: # RuleOutput.approved is a built-in boolean field
         return invoice
     reviewed_invoice = await human_review(invoice, suggested_data=invoice)
     return reviewed_invoice.output
