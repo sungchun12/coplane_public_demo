@@ -339,10 +339,14 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "planar" },
+    { name = "pymermaider" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "planar", specifier = "==0.14.0" }]
+requires-dist = [
+    { name = "planar", specifier = "==0.14.0" },
+    { name = "pymermaider", specifier = ">=0.1.4" },
+]
 
 [[package]]
 name = "croniter"
@@ -1213,6 +1217,29 @@ wheels = [
 [package.optional-dependencies]
 crypto = [
     { name = "cryptography" },
+]
+
+[[package]]
+name = "pymermaider"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/46/1cbf33455ab78ba8055dae130ed0f84edfa6787db6960c1066104c07c86c/pymermaider-0.1.4-py3-none-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:4d43e690bc51d588796b65a128fedcb50baf97115abda7470d09b7cec7428077", size = 3410249, upload-time = "2024-09-22T06:54:39.323Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/8b/3a4e954265c3caf8d0a4c012ac252cf6bf131f32c0cd63bdd7bc1fd9382b/pymermaider-0.1.4-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:16adb6e941198a81d00f21078265fde6854b87c09ebcc476ff282b50a01817e1", size = 1751488, upload-time = "2024-09-22T06:54:41.47Z" },
+    { url = "https://files.pythonhosted.org/packages/da/2f/0e53f06053c838350d692f9faea498411d89b1f1428eac4db7dde04cbe5d/pymermaider-0.1.4-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d7411cdbe99a940e4f6e19db3fa282974b230541b458a4f0395ebd5a256d7e50", size = 1800116, upload-time = "2024-09-22T06:54:43.141Z" },
+    { url = "https://files.pythonhosted.org/packages/47/8b/7f9f6924978265e03f116d3394e900a16d2653ee240262c2c4b066eb84dc/pymermaider-0.1.4-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:18d962fae6159d0a49a47aea255ffbd041fb5f93585dacb681118c0f3514ee48", size = 1792590, upload-time = "2024-09-22T06:54:44.966Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/b8/8359f1fe13c8898591496f81207468824121b71584d2a57a734feb78e57e/pymermaider-0.1.4-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6e44dcc4a6bb6fe36d808326c44152cb50c3a75fc2fc0842d3e650c940deb0c1", size = 1825184, upload-time = "2024-09-22T06:54:46.779Z" },
+    { url = "https://files.pythonhosted.org/packages/42/cc/7e835e46a0ab2d04bba519f8ebae923776e6b602940ab1a7ae12acd1e5fb/pymermaider-0.1.4-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:60709e39394ee74666168f2719c567b74b31d6288187214760b3259723e8f5e4", size = 1963967, upload-time = "2024-09-22T06:54:48.332Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/5b/4857cb094d65c83ac1b5f027c8a507d04b541f11ff83a45b39e4fca4f955/pymermaider-0.1.4-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f5430dabd04da308ce74202a6b8c91ffc5e83f03e04de65b297fda33230e9c9c", size = 1908038, upload-time = "2024-09-22T06:54:50.182Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/4d/d195668810e656f825765748d3ea71c6d952c4d437a8cb7e027b5707b884/pymermaider-0.1.4-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:bc747da154ffd6401b3ff9c3eb977bf7f592d8a5854ed4ae31329db538ee7f45", size = 2266973, upload-time = "2024-09-22T06:54:51.747Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/3b/b1278cf5c0c9df19ded9c6c96d6e289d58d07290fb24ae898dec287e3084/pymermaider-0.1.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:915373cd52f179d712c2083a89be591feafbf85818108760a87a2f49ffd6d3d5", size = 1835815, upload-time = "2024-09-22T06:54:53.527Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/57/fe7bba30ec423975b69bc9367d62a30cc491ca45c33a947be2393ab3d2c7/pymermaider-0.1.4-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:db97bf5440bce1eefc8acf9df83f19a9f1432973d45ded638541fa0c95f17a24", size = 1769493, upload-time = "2024-09-22T06:54:55.241Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/5e/88deea64df300cc06bc276193898a4a2ec342ce24f64d58e61b9633e759c/pymermaider-0.1.4-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:88b110e85bfd8f0126c86a9d1c89fb699264708ee587aa72dc7bc330691bec42", size = 1758364, upload-time = "2024-09-22T06:54:56.62Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/aa/e660644b4474a9e0d38a803fc819f0a88904749999a3f91d4d931cc822ee/pymermaider-0.1.4-py3-none-musllinux_1_2_i686.whl", hash = "sha256:1cd323ede5472c400e6120c84d268e75d16ae87dce96fc6b7d51f7df1e9def4d", size = 1778752, upload-time = "2024-09-22T06:54:58.763Z" },
+    { url = "https://files.pythonhosted.org/packages/89/eb/5e41ad84d617c147dc2a82681f7549f5f349fd1953c27403ad27ca4b25d2/pymermaider-0.1.4-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:d89ff2e89a8766bcfc99b490ec90d2604e06f1e202df61842204a1d43361e6fd", size = 1846703, upload-time = "2024-09-22T06:55:00.178Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/d0/2483597326e68ebc6c75a17dbc53fe697e97e346d6889fbdd41826864d35/pymermaider-0.1.4-py3-none-win32.whl", hash = "sha256:437e2d09dc0420d56cf51cd6ee3c2a2e9553b3bfab69910188d429f909bd7549", size = 1581968, upload-time = "2024-09-22T06:55:01.849Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/54/a9f1c9db1e107a9d310ce6a744418fd75257e7e66333c92d722b1f755f12/pymermaider-0.1.4-py3-none-win_amd64.whl", hash = "sha256:c4e188545d9f0e81ce8acc41820186f148ee673b8e8dd8fea6ebd42eff46b2ca", size = 1690891, upload-time = "2024-09-22T06:55:03.974Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/8b/30235d714099d8b70116632a0b019db64a52472005feee00d54811521642/pymermaider-0.1.4-py3-none-win_arm64.whl", hash = "sha256:07105fc9be39530658bfe5ff388546f30b8871195b77099abceaa6ed332b3609", size = 1578229, upload-time = "2024-09-22T06:55:05.573Z" },
 ]
 
 [[package]]
