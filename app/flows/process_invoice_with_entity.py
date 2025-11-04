@@ -5,7 +5,9 @@ from planar.rules.decorator import rule
 from planar.workflows import step, workflow
 from pydantic import BaseModel
 from app.db.entities import Invoice
-
+from planar import get_session
+from sqlalchemy import select
+from typing import Any, List
 # Graph representation of the workflow: [process_invoice]
 # [HUMAN: Input the Invoice File as a file upload] -> [AGENT: invoice_agent] -> 
 # [STEP:extract_invoice] -> [STEP: maybe_approve] -> [RULE: auto_approve] -> 
@@ -18,6 +20,10 @@ from app.db.entities import Invoice
 # class Invoice(BaseModel):
 #     vendor: str
 #     amount: float
+
+class VerifyDuplicateInvoice(BaseModel):
+    is_duplicate: bool
+    reason: str
 
 # rule to make sure the input only allows float values
 class RuleInput(BaseModel):
@@ -49,6 +55,11 @@ human_review = Human(
     output_type=Invoice,
 )
 
+# TODO: create a rule to verify if the invoice is a duplicate
+# run the query within the rule
+@rule(description="Verify if the invoice is a duplicate")
+def verify_duplicate_invoice_rule(invoice: Invoice) -> VerifyDuplicateInvoice:
+    return VerifyDuplicateInvoice(is_duplicate=invoice.invoice_number in historical_invoice_numbers, reason=f"Invoice number {invoice.invoice_number} is a duplicate")
 
 @rule(description="Auto approve invoices under $1000")
 def auto_approve(input: RuleInput) -> RuleOutput:
@@ -62,6 +73,24 @@ async def extract_invoice(invoice_file: PlanarFile) -> Invoice:
     return result.output
 
 # step 2
+# TODO: create a step to verify if the invoice is a duplicate
+@step(display_name="Verify duplicate invoice")
+async def verify_duplicate_invoice_step(invoice: Invoice) -> VerifyDuplicateInvoice:
+    # based on the input invoice number, query the database for an existing invoice
+    # need to use SQLAlchemy to query the database
+    session = get_session()
+    async with session.begin():
+        stmt = select(Invoice).where(Invoice.invoice_number == invoice.invoice_number)
+        historical_invoice_numbers = await session.exec(stmt)
+        # invoke the rule to verify if the invoice_number is a duplicate
+        duplicate_invoice = await verify_duplicate_invoice_rule(invoice, historical_invoice_numbers)
+    # if duplicate, return the duplicate invoice
+    if duplicate_invoice.is_duplicate:
+        return duplicate_invoice
+    else:
+        return VerifyDuplicateInvoice(is_duplicate=False, reason=f"Invoice number {invoice.invoice_number} is NOT a duplicate")
+
+# step 3
 @step(display_name="Maybe approve")
 async def maybe_approve(invoice: Invoice) -> Invoice:
     auto_approve_result = await auto_approve(RuleInput(amount=invoice.amount))
@@ -74,7 +103,11 @@ async def maybe_approve(invoice: Invoice) -> Invoice:
 #### Workflow Definition ####
 @workflow()
 async def process_invoice_with_entity(invoice_file: PlanarFile) -> Invoice:
-    invoice = await extract_invoice(invoice_file)
-    return await maybe_approve(invoice)
+    invoice = await extract_invoice[Any, Any, Invoice](invoice_file)
+    duplicate_invoice = await verify_duplicate_invoice_step(invoice)
+    if duplicate_invoice.is_duplicate:
+        return duplicate_invoice
+    else:
+        return await maybe_approve(invoice)
 #### Workflow Definition ####
 

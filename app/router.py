@@ -15,7 +15,8 @@ class InvoiceResponse(BaseModel):
     status: str
     echo: str
  
- 
+# create API endpoints based on the Invoice entity
+# but why would I want to do this when I can just use the workflow directly?
 @router.post("/invoices")
 async def create_invoice(data: InvoiceRequest) -> InvoiceResponse:
     session = get_session()

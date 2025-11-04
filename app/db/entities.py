@@ -10,3 +10,4 @@ class Invoice(PlanarBaseEntity, TimestampMixin, table=True):
 
     vendor: str = Field()
     amount: float = Field()
+    invoice_number: str = Field()
