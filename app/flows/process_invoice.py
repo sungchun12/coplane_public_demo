@@ -1,3 +1,4 @@
+from planar.human.models import HumanTaskResult
 from planar.ai import Agent
 from planar.files import PlanarFile
 from planar.human import Human
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from pydantic import BaseModel
 import asyncio
-from typing import Optional
+from typing import Any, Optional
 
 # Graph representation of the workflow: view process_invoice.html in your browser
 
@@ -15,11 +16,21 @@ from typing import Optional
 #### Input and Input/Output Type Definitions ####
 # Defines the exact data and their types that the invoice agent will focus on extracting
 class InvoiceData(BaseModel):
+    file: PlanarFile
     vendor: str
     amount: float
     description: str
     invoice_date: datetime
     invoice_number: str
+
+class InvoiceDataApproved(BaseModel):
+    file: PlanarFile
+    vendor: str
+    amount: float
+    description: str
+    invoice_date: datetime
+    invoice_number: str
+    approved: bool
 
 
 # Rule to make sure the input only allows float values
@@ -164,7 +175,7 @@ human_review = Human(
     name="Review Invoice",
     title="Review Invoice",
     input_type=InvoiceData,
-    output_type=InvoiceData,
+    output_type=InvoiceDataApproved,
 )
 
 
@@ -185,12 +196,18 @@ async def extract_invoice(invoice_file: PlanarFile) -> InvoiceData:
 
 # step 2
 @step(display_name="Maybe approve")
-async def maybe_approve(invoice: InvoiceData) -> InvoiceData:
+async def maybe_approve(invoice: InvoiceData) -> InvoiceDataApproved:
     auto_approve_result = await auto_approve(RuleInput(amount=invoice.amount))
     if auto_approve_result.approved:
-        return invoice
-    reviewed_invoice = await human_review(invoice, suggested_data=invoice)
-    return reviewed_invoice.output
+        return InvoiceDataApproved(approved=True, **invoice.model_dump())
+    else:
+        reviewed_invoice = await human_review(invoice, suggested_data=invoice)
+        # Access .output to get the InvoiceDataApproved object from HumanTaskResult
+        if reviewed_invoice.output.approved:
+            return reviewed_invoice.output
+        else:
+            print(f"Invoice not approved: {reviewed_invoice.output.reason if hasattr(reviewed_invoice.output, 'reason') else 'No reason provided'}")
+            raise ValueError("Invoice was not approved by human reviewer")
 
 
 # step 3

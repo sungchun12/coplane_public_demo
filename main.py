@@ -5,7 +5,7 @@ from app.flows.process_invoice import process_invoice
 from app.flows.process_invoice_with_entity import process_invoice_with_entity
 from app.flows.process_invoice import invoice_agent
 from app.router import router
-
+from app.flows.process_invoice import auto_approve
 from dotenv import load_dotenv
 
 load_dotenv(".env.dev")
@@ -18,7 +18,7 @@ app = (
     .register_router(router, prefix="/actions")
 )
 
-app.register_workflow(process_invoice_with_entity)
+app.register_rule(auto_approve)
 
 if __name__ == "__main__":
     print("Planar app is ready!")
