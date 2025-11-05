@@ -172,7 +172,7 @@ human_review = Human(
 # Cannot be used for async functions and interactions with external systems
 @rule(description="Auto approve invoices under $1000")
 def auto_approve(input: RuleInput) -> RuleOutput:
-    return RuleOutput(approved=input.amount < 1000, reason="Amount is under $1000")
+    return RuleOutput(approved=input.amount < 10, reason="Amount is under $1000")
 
 
 #### Step Definitions ####
