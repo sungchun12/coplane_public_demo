@@ -23,7 +23,8 @@ class InvoiceData(BaseModel):
     invoice_date: datetime
     invoice_number: str
 
-class InvoiceDataApproved(BaseModel):
+
+class InvoiceDataReviewed(BaseModel):
     file: PlanarFile
     vendor: str
     amount: float
@@ -36,6 +37,7 @@ class InvoiceDataApproved(BaseModel):
 # Rule to make sure the input only allows float values
 class RuleInput(BaseModel):
     amount: float
+    threshold: float
 
 
 # Rule to make sure the output only allows boolean values and a reason string
@@ -175,15 +177,15 @@ human_review = Human(
     name="Review Invoice",
     title="Review Invoice",
     input_type=InvoiceData,
-    output_type=InvoiceDataApproved,
+    output_type=InvoiceDataReviewed,
 )
 
 
 # main purpose is to expose the rule in the coplane UI and have business users manually override
 # Cannot be used for async functions and interactions with external systems
 @rule(description="Auto approve invoices under $1000")
-def auto_approve(input: RuleInput) -> RuleOutput:
-    return RuleOutput(approved=input.amount < 10, reason="Amount is under $1000")
+def auto_approver(input: RuleInput) -> RuleOutput:
+    return RuleOutput(approved=input.amount < input.threshold, reason=f"Amount is under ${input.threshold}")
 
 
 #### Step Definitions ####
@@ -196,17 +198,16 @@ async def extract_invoice(invoice_file: PlanarFile) -> InvoiceData:
 
 # step 2
 @step(display_name="Maybe approve")
-async def maybe_approve(invoice: InvoiceData) -> InvoiceDataApproved:
-    auto_approve_result = await auto_approve(RuleInput(amount=invoice.amount))
+async def maybe_approve(invoice: InvoiceData) -> InvoiceDataReviewed:
+    auto_approve_result = await auto_approver(RuleInput(amount=invoice.amount, threshold=1000))
     if auto_approve_result.approved:
-        return InvoiceDataApproved(approved=True, **invoice.model_dump())
+        return InvoiceDataReviewed(approved=True, **invoice.model_dump())
     else:
         reviewed_invoice = await human_review(invoice, suggested_data=invoice)
-        # Access .output to get the InvoiceDataApproved object from HumanTaskResult
+        # Access .output to get the InvoiceDataReviewed object from HumanTaskResult
         if reviewed_invoice.output.approved:
             return reviewed_invoice.output
         else:
-            print(f"Invoice not approved: {reviewed_invoice.output.reason if hasattr(reviewed_invoice.output, 'reason') else 'No reason provided'}")
             raise ValueError("Invoice was not approved by human reviewer")
 
 
