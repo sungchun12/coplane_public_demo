@@ -11,6 +11,7 @@ from typing import Optional
 
 # Graph representation of the workflow: view process_invoice.html in your browser
 
+
 #### Input and Input/Output Type Definitions ####
 # Defines the exact data and their types that the invoice agent will focus on extracting
 class InvoiceData(BaseModel):
@@ -20,15 +21,20 @@ class InvoiceData(BaseModel):
     invoice_date: datetime
     invoice_number: str
 
+
 # Rule to make sure the input only allows float values
 class RuleInput(BaseModel):
     amount: float
+
 
 # Rule to make sure the output only allows boolean values and a reason string
 class RuleOutput(BaseModel):
     approved: bool
     reason: str
+
+
 #### Input and Output Type Definitions ####
+
 
 #### Workflow Definition ####
 @workflow()
@@ -37,41 +43,52 @@ async def process_invoice(invoice_file: PlanarFile) -> InvoiceData:
     invoice_approved = await maybe_approve(invoice)
     if invoice_approved:
         return await write_invoice_to_general_ledger(invoice_approved)
+
+
 #### Workflow Definition ####
+
 
 ### Mock General Ledger Definition ###
 # For this self-contained example, we will use a mock general ledger class
-# in a real-world scenario, you would integrate with the API provided 
+# in a real-world scenario, you would integrate with the API provided
 # by the general ledger system such as Netsuite, QuickBooks, etc.
 class JournalEntryLine(BaseModel):
     """Represents a single line in a journal entry (debit or credit)"""
+
     account_name: str  # e.g., "Office Supplies Expense", "Accounts Payable - ABC"
     debit: float = 0.0
     credit: float = 0.0
-    
+
+
 class JournalEntry(BaseModel):
     """Represents a complete journal entry"""
+
     entry_date: datetime
     invoice_number: str
     vendor: str
     description: str
     lines: list[JournalEntryLine]
-    
+
     @property
     def is_balanced(self) -> bool:
         """Verify debits equal credits"""
         total_debits = sum(line.debit for line in self.lines)
         total_credits = sum(line.credit for line in self.lines)
         return abs(total_debits - total_credits) < 0.01  # Account for floating point
+
+
 ### Mock General Ledger Definition ####
+
 
 ### Mock General Ledger API Client ###
 class GLApiResponse(BaseModel):
     """Response from the general ledger API"""
+
     success: bool
     entry_id: str
     message: str
     timestamp: datetime
+
 
 class MockGeneralLedgerClient:
     """
@@ -81,12 +98,16 @@ class MockGeneralLedgerClient:
     - QuickBooks Online API
     etc.
     """
-    
-    def __init__(self, base_url: str = "https://api.mockgl.example.com", api_key: Optional[str] = None):
+
+    def __init__(
+        self,
+        base_url: str = "https://api.mockgl.example.com",
+        api_key: Optional[str] = None,
+    ):
         self.base_url = base_url
         self.api_key = api_key or "mock_api_key_12345"
         self.entry_counter = 1000  # Start with entry ID 1000
-        
+
     async def post_journal_entry(self, journal_entry: JournalEntry) -> GLApiResponse:
         """
         Simulate posting a journal entry to the general ledger system.
@@ -94,7 +115,7 @@ class MockGeneralLedgerClient:
         """
         # Simulate network latency
         await asyncio.sleep(0.5)
-        
+
         # Validate the entry before "posting"
         # Duplicate validation
         if not journal_entry.is_balanced:
@@ -102,32 +123,29 @@ class MockGeneralLedgerClient:
                 success=False,
                 entry_id="",
                 message="Journal entry is not balanced",
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
-        
+
         # Simulate successful API response
         self.entry_counter += 1
         entry_id = f"JE-{self.entry_counter}"
-        
+
         return GLApiResponse(
             success=True,
             entry_id=entry_id,
             message=f"Journal entry posted successfully for vendor {journal_entry.vendor}",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-    
+
     async def get_entry_status(self, entry_id: str) -> dict:
         """Mock method to check status of a posted entry"""
         await asyncio.sleep(0.2)
         return {
             "entry_id": entry_id,
             "status": "posted",
-            "posted_date": datetime.now().isoformat()
+            "posted_date": datetime.now().isoformat(),
         }
 
-# Initialize the mock client (in production, this would use real credentials)
-gl_client = MockGeneralLedgerClient()
-### Mock General Ledger API Client ###
 
 #### Agent Definition ####
 invoice_agent = Agent(
@@ -149,11 +167,13 @@ human_review = Human(
     output_type=InvoiceData,
 )
 
+
 # main purpose is to expose the rule in the coplane UI and have business users manually override
 # Cannot be used for async functions and interactions with external systems
 @rule(description="Auto approve invoices under $1000")
 def auto_approve(input: RuleInput) -> RuleOutput:
     return RuleOutput(approved=input.amount < 1000, reason="Amount is under $1000")
+
 
 #### Step Definitions ####
 # step 1
@@ -161,6 +181,7 @@ def auto_approve(input: RuleInput) -> RuleOutput:
 async def extract_invoice(invoice_file: PlanarFile) -> InvoiceData:
     result = await invoice_agent(invoice_file)
     return result.output
+
 
 # step 2
 @step(display_name="Maybe approve")
@@ -171,6 +192,7 @@ async def maybe_approve(invoice: InvoiceData) -> InvoiceData:
     reviewed_invoice = await human_review(invoice, suggested_data=invoice)
     return reviewed_invoice.output
 
+
 # step 3
 # journal entry format:
 # Date: November 5, 2025
@@ -180,11 +202,12 @@ async def maybe_approve(invoice: InvoiceData) -> InvoiceData:
 # Office Supplies Expense          $850.00
 #   Accounts Payable - ABC                    $850.00
 
+
 # Description: Invoice from ABC Office Supplies - Invoice #12345
 @step(display_name="Post journal entry to general ledger")
 async def write_invoice_to_general_ledger(invoice: InvoiceData) -> JournalEntry:
     """Simulate posting a journal entry for an approved invoice"""
-    
+
     # Create the journal entry with debit and credit lines
     journal_entry = JournalEntry(
         entry_date=invoice.invoice_date,
@@ -196,46 +219,50 @@ async def write_invoice_to_general_ledger(invoice: InvoiceData) -> JournalEntry:
             JournalEntryLine(
                 account_name="Office Supplies Expense",  # Could be dynamic based on vendor/category
                 debit=invoice.amount,
-                credit=0.0
+                credit=0.0,
             ),
             # Credit: Accounts Payable - increases liability
             JournalEntryLine(
                 account_name=f"Accounts Payable - {invoice.vendor}",
                 debit=0.0,
-                credit=invoice.amount
-            )
-        ]
+                credit=invoice.amount,
+            ),
+        ],
     )
-    
+
     # Validate the entry is balanced
     if not journal_entry.is_balanced:
         raise ValueError("Journal entry is not balanced!")
-    
+
+    # Initialize the mock client (in production, this would use real credentials)
+    gl_client = MockGeneralLedgerClient()
     # Post to the mock general ledger API
     api_response = await gl_client.post_journal_entry(journal_entry)
-    
+
     if not api_response.success:
         raise ValueError(f"Failed to post journal entry: {api_response.message}")
-    
+
     # Log the successful posting
-    print(f"\n{'*'*60}")
+    print(f"\n{'*' * 60}")
     print(f"API RESPONSE: {api_response.message}")
     print(f"Entry ID: {api_response.entry_id}")
     print(f"Timestamp: {api_response.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"{'*'*60}\n")
-    
+    print(f"{'*' * 60}\n")
+
     # For simulation, we also log the entry details so it displays in the CoPlane UI
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"JOURNAL ENTRY - {journal_entry.entry_date.strftime('%B %d, %Y')}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Description: {journal_entry.description}\n")
     print(f"{'Account':<40} {'Debit':>10} {'Credit':>10}")
-    print(f"{'-'*60}")
+    print(f"{'-' * 60}")
     for line in journal_entry.lines:
         debit_str = f"${line.debit:,.2f}" if line.debit > 0 else ""
         credit_str = f"${line.credit:,.2f}" if line.credit > 0 else ""
         print(f"{line.account_name:<40} {debit_str:>10} {credit_str:>10}")
-    print(f"{'='*60}\n")
-    
+    print(f"{'=' * 60}\n")
+
     return journal_entry
+
+
 #### Step Definitions ####
