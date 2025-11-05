@@ -6,6 +6,8 @@ from planar.workflows import step, workflow
 from pydantic import BaseModel
 from datetime import datetime
 from pydantic import BaseModel
+import asyncio
+from typing import Optional
 
 # Graph representation of the workflow: view process_invoice.html in your browser
 
@@ -53,6 +55,70 @@ class JournalEntry(BaseModel):
         total_credits = sum(line.credit for line in self.lines)
         return abs(total_debits - total_credits) < 0.01  # Account for floating point
 ### Mock General Ledger Definition ####
+
+### Mock General Ledger API Client ###
+class GLApiResponse(BaseModel):
+    """Response from the general ledger API"""
+    success: bool
+    entry_id: str
+    message: str
+    timestamp: datetime
+
+class MockGeneralLedgerClient:
+    """
+    Mock client that simulates API calls to a general ledger system.
+    In production, this would be replaced with actual API clients like:
+    - NetSuite SuiteTalk API
+    - QuickBooks Online API
+    etc.
+    """
+    
+    def __init__(self, base_url: str = "https://api.mockgl.example.com", api_key: Optional[str] = None):
+        self.base_url = base_url
+        self.api_key = api_key or "mock_api_key_12345"
+        self.entry_counter = 1000  # Start with entry ID 1000
+        
+    async def post_journal_entry(self, journal_entry: JournalEntry) -> GLApiResponse:
+        """
+        Simulate posting a journal entry to the general ledger system.
+        In a real implementation, this would make an HTTP request to the GL API.
+        """
+        # Simulate network latency
+        await asyncio.sleep(0.5)
+        
+        # Validate the entry before "posting"
+        # Duplicate validation
+        if not journal_entry.is_balanced:
+            return GLApiResponse(
+                success=False,
+                entry_id="",
+                message="Journal entry is not balanced",
+                timestamp=datetime.now()
+            )
+        
+        # Simulate successful API response
+        self.entry_counter += 1
+        entry_id = f"JE-{self.entry_counter}"
+        
+        return GLApiResponse(
+            success=True,
+            entry_id=entry_id,
+            message=f"Journal entry posted successfully for vendor {journal_entry.vendor}",
+            timestamp=datetime.now()
+        )
+    
+    async def get_entry_status(self, entry_id: str) -> dict:
+        """Mock method to check status of a posted entry"""
+        await asyncio.sleep(0.2)
+        return {
+            "entry_id": entry_id,
+            "status": "posted",
+            "posted_date": datetime.now().isoformat()
+        }
+
+# Initialize the mock client (in production, this would use real credentials)
+gl_client = MockGeneralLedgerClient()
+### Mock General Ledger API Client ###
 
 #### Agent Definition ####
 invoice_agent = Agent(
@@ -136,11 +202,20 @@ async def write_invoice_to_general_ledger(invoice: InvoiceData) -> JournalEntry:
     if not journal_entry.is_balanced:
         raise ValueError("Journal entry is not balanced!")
     
-    # TODO: In a real system, you'd make an API call here:
-    # TODO: mock an API call to the general ledger system
-    # await netsuite_client.post_journal_entry(journal_entry)
+    # Post to the mock general ledger API
+    api_response = await gl_client.post_journal_entry(journal_entry)
     
-    # For simulation, we log it so it displays in the CoPlane UI
+    if not api_response.success:
+        raise ValueError(f"Failed to post journal entry: {api_response.message}")
+    
+    # Log the successful posting
+    print(f"\n{'*'*60}")
+    print(f"API RESPONSE: {api_response.message}")
+    print(f"Entry ID: {api_response.entry_id}")
+    print(f"Timestamp: {api_response.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'*'*60}\n")
+    
+    # For simulation, we also log the entry details so it displays in the CoPlane UI
     print(f"\n{'='*60}")
     print(f"JOURNAL ENTRY - {journal_entry.entry_date.strftime('%B %d, %Y')}")
     print(f"{'='*60}")
