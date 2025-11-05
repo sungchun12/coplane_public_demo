@@ -63,6 +63,7 @@ human_review = Human(
     
 #     return VerifyDuplicateInvoice(is_duplicate=invoice.invoice_number in historical_invoice_numbers, reason=f"Invoice number {invoice.invoice_number} is a duplicate")
 
+# main purpose is to expose the rule in the coplane UI and have business users manually override
 @rule(description="Auto approve invoices under $1000")
 def auto_approve(input: RuleInput) -> RuleOutput:
     return RuleOutput(approved=input.amount < 1000, reason="Amount is under $1000")

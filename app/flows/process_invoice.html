@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Processing Workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .legend h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .legend-item {
+            margin: 10px 0;
+            padding: 8px;
+            border-left: 4px solid;
+        }
+        .legend-input { border-color: #4a90e2; background-color: #e8f2ff; }
+        .legend-agent { border-color: #7b68ee; background-color: #f0edff; }
+        .legend-step { border-color: #50c878; background-color: #e8f8f0; }
+        .legend-rule { border-color: #ffa500; background-color: #fff8e8; }
+        .legend-human { border-color: #e74c3c; background-color: #ffe8e6; }
+        .legend-decision { border-color: #f39c12; background-color: #fff4e6; }
+        .legend-output { border-color: #27ae60; background-color: #e8f8f0; }
+    </style>
+</head>
+<body>
+    <h1>Invoice Processing Workflow</h1>
+    <p class="subtitle">process_invoice.py</p>
+    
+    <div class="mermaid">
+        flowchart TD
+            Start([User Uploads Invoice File]) --> ExtractInvoice
+            
+            ExtractInvoice["<b>STEP: extract_invoice</b><br/>Uses Invoice Agent<br/>(OpenAI GPT-4.1)"]
+            ExtractInvoice --> Agent["<b>AGENT: invoice_agent</b><br/>Extracts vendor & amount<br/>from invoice file"]
+            
+            Agent --> MaybeApprove["<b>STEP: maybe_approve</b><br/>Apply approval logic"]
+            
+            MaybeApprove --> AutoApprove["<b>RULE: auto_approve</b><br/>Check if amount < $1000"]
+            
+            AutoApprove --> Decision{Amount<br/>< $1000?}
+            
+            Decision -->|Yes| Approved[["<b>APPROVED</b><br/>Invoice processed"]]
+            Decision -->|No| HumanReview["<b>HUMAN: human_review</b><br/>Manual review required"]
+            
+            HumanReview --> ReviewDecision{Approved by<br/>reviewer?}
+            ReviewDecision -->|Yes| Approved
+            ReviewDecision -->|No| Rejected[["<b>REJECTED</b><br/>Not approved by reviewer"]]
+            
+            Approved --> End([End])
+            Rejected --> End
+            
+            classDef inputStyle fill:#4a90e2,stroke:#2e5c8a,color:#fff,stroke-width:2px
+            classDef agentStyle fill:#7b68ee,stroke:#5a4ab8,color:#fff,stroke-width:2px
+            classDef stepStyle fill:#50c878,stroke:#3a9b5c,color:#fff,stroke-width:2px
+            classDef ruleStyle fill:#ffa500,stroke:#cc8400,color:#fff,stroke-width:2px
+            classDef humanStyle fill:#e74c3c,stroke:#c0392b,color:#fff,stroke-width:2px
+            classDef decisionStyle fill:#f39c12,stroke:#d68910,color:#fff,stroke-width:2px
+            classDef outputStyle fill:#27ae60,stroke:#1e8449,color:#fff,stroke-width:2px
+            classDef endStyle fill:#95a5a6,stroke:#7f8c8d,color:#fff,stroke-width:2px
+            
+            class Start inputStyle
+            class Agent agentStyle
+            class ExtractInvoice,MaybeApprove stepStyle
+            class AutoApprove ruleStyle
+            class HumanReview humanStyle
+            class Decision,ReviewDecision decisionStyle
+            class Approved,Rejected outputStyle
+            class End endStyle
+    </div>
+    
+    <div class="legend">
+        <h2>Workflow Components</h2>
+        <div class="legend-item legend-input">
+            <strong>Input:</strong> User uploads invoice file (PlanarFile format)
+        </div>
+        <div class="legend-item legend-agent">
+            <strong>Agent:</strong> AI agent (GPT-4.1) that extracts structured data from invoice
+        </div>
+        <div class="legend-item legend-step">
+            <strong>Steps:</strong> Processing steps that transform and validate data
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                <li><code>extract_invoice</code>: Calls invoice agent to extract vendor and amount</li>
+                <li><code>maybe_approve</code>: Applies approval logic with rules</li>
+            </ul>
+        </div>
+        <div class="legend-item legend-rule">
+            <strong>Rule:</strong> <code>auto_approve</code> - Automatically approves invoices under $1,000
+        </div>
+        <div class="legend-item legend-human">
+            <strong>Human Review:</strong> Manual review required for invoices ≥ $1,000
+        </div>
+        <div class="legend-item legend-decision">
+            <strong>Decision Points:</strong> Conditional logic that determines workflow path
+        </div>
+        <div class="legend-item legend-output">
+            <strong>Output:</strong> Final InvoiceData object (approved or rejected)
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>
+
