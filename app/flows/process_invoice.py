@@ -30,6 +30,15 @@ class RuleOutput(BaseModel):
     reason: str
 #### Input and Output Type Definitions ####
 
+#### Workflow Definition ####
+@workflow()
+async def process_invoice(invoice_file: PlanarFile) -> InvoiceData:
+    invoice = await extract_invoice(invoice_file)
+    invoice_approved = await maybe_approve(invoice)
+    if invoice_approved:
+        return await write_invoice_to_general_ledger(invoice_approved)
+#### Workflow Definition ####
+
 ### Mock General Ledger Definition ###
 # For this self-contained example, we will use a mock general ledger class
 # in a real-world scenario, you would integrate with the API provided 
@@ -144,7 +153,7 @@ human_review = Human(
 # Cannot be used for async functions and interactions with external systems
 @rule(description="Auto approve invoices under $1000")
 def auto_approve(input: RuleInput) -> RuleOutput:
-    return RuleOutput(approved=input.amount < 10, reason="Amount is under $1000")
+    return RuleOutput(approved=input.amount < 1000, reason="Amount is under $1000")
 
 #### Step Definitions ####
 # step 1
@@ -230,13 +239,3 @@ async def write_invoice_to_general_ledger(invoice: InvoiceData) -> JournalEntry:
     
     return journal_entry
 #### Step Definitions ####
-
-#### Workflow Definition ####
-@workflow()
-async def process_invoice(invoice_file: PlanarFile) -> InvoiceData:
-    invoice = await extract_invoice(invoice_file)
-    invoice_approved = await maybe_approve(invoice)
-    if invoice_approved:
-        return await write_invoice_to_general_ledger(invoice_approved)
-#### Workflow Definition ####
-
