@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from pydantic import BaseModel
 import asyncio
-from typing import Any, Optional
+from typing import Optional
 
 # Graph representation of the workflow: view process_invoice.html in your browser
 
@@ -23,12 +23,12 @@ class InvoiceData(BaseModel):
     invoice_date: datetime
     invoice_number: str
 
-
+# Inherits from InvoiceData and adds the approved field
 class InvoiceDataReviewed(InvoiceData):
     approved: bool
 
 
-# Rule to make sure the input only allows float values
+# Rule to make sure the input only allows amount and threshold float values
 class RuleInput(BaseModel):
     amount: float
     threshold: float
@@ -44,6 +44,7 @@ class RuleOutput(BaseModel):
 
 
 #### Workflow Definition ####
+# This is composed of steps marked by `@step`
 @workflow()
 async def process_invoice(invoice_file: PlanarFile) -> InvoiceData:
     invoice = await extract_invoice(invoice_file)
@@ -124,7 +125,7 @@ class MockGeneralLedgerClient:
         await asyncio.sleep(0.5)
 
         # Validate the entry before "posting"
-        # Duplicate validation
+        # Duplicate validation that is likely built-in to the general ledger system
         if not journal_entry.is_balanced:
             return GLApiResponse(
                 success=False,
@@ -177,7 +178,7 @@ human_review = Human(
 
 # main purpose is to expose the rule in the coplane UI and have business users manually override
 # Cannot be used for async functions and interactions with external systems
-@rule(description="Auto approve invoices under $1000")
+@rule(description="Auto approve invoices under $1000 by default")
 def auto_approver(input: RuleInput) -> RuleOutput:
     return RuleOutput(approved=input.amount < input.threshold, reason=f"Amount is under ${input.threshold}")
 

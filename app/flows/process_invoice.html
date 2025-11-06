@@ -53,6 +53,7 @@
         .legend-human { border-color: #e74c3c; background-color: #ffe8e6; }
         .legend-decision { border-color: #f39c12; background-color: #fff4e6; }
         .legend-output { border-color: #27ae60; background-color: #e8f8f0; }
+        .legend-external { border-color: #3498db; background-color: #e8f4f8; }
     </style>
 </head>
 <body>
@@ -64,7 +65,7 @@
             Start([User Uploads Invoice File]) --> ExtractInvoice
             
             ExtractInvoice["<b>STEP: extract_invoice</b><br/>Uses Invoice Agent<br/>(OpenAI GPT-4.1)"]
-            ExtractInvoice --> Agent["<b>AGENT: invoice_agent</b><br/>Extracts vendor & amount<br/>from invoice file"]
+            ExtractInvoice --> Agent["<b>AGENT: invoice_agent</b><br/>Extracts vendor, amount,<br/>description, date & number"]
             
             Agent --> MaybeApprove["<b>STEP: maybe_approve</b><br/>Apply approval logic"]
             
@@ -72,14 +73,18 @@
             
             AutoApprove --> Decision{Amount<br/>< $1000?}
             
-            Decision -->|Yes| Approved[["<b>APPROVED</b><br/>Invoice processed"]]
+            Decision -->|Yes| PostGL["<b>STEP: write_invoice_to_general_ledger</b><br/>Post journal entry to GL system"]
             Decision -->|No| HumanReview["<b>HUMAN: human_review</b><br/>Manual review required"]
             
             HumanReview --> ReviewDecision{Approved by<br/>reviewer?}
-            ReviewDecision -->|Yes| Approved
+            ReviewDecision -->|Yes| PostGL
             ReviewDecision -->|No| Rejected[["<b>REJECTED</b><br/>Not approved by reviewer"]]
             
-            Approved --> End([End])
+            PostGL --> GLClient["<b>EXTERNAL: MockGeneralLedgerClient</b><br/>Simulates API call to<br/>General Ledger system"]
+            
+            GLClient --> Success[["<b>SUCCESS</b><br/>Journal Entry Posted"]]
+            
+            Success --> End([End])
             Rejected --> End
             
             classDef inputStyle fill:#4a90e2,stroke:#2e5c8a,color:#fff,stroke-width:2px
@@ -90,15 +95,17 @@
             classDef decisionStyle fill:#f39c12,stroke:#d68910,color:#fff,stroke-width:2px
             classDef outputStyle fill:#27ae60,stroke:#1e8449,color:#fff,stroke-width:2px
             classDef endStyle fill:#95a5a6,stroke:#7f8c8d,color:#fff,stroke-width:2px
+            classDef externalStyle fill:#3498db,stroke:#2874a6,color:#fff,stroke-width:2px
             
             class Start inputStyle
             class Agent agentStyle
-            class ExtractInvoice,MaybeApprove stepStyle
+            class ExtractInvoice,MaybeApprove,PostGL stepStyle
             class AutoApprove ruleStyle
             class HumanReview humanStyle
             class Decision,ReviewDecision decisionStyle
-            class Approved,Rejected outputStyle
+            class Success,Rejected outputStyle
             class End endStyle
+            class GLClient externalStyle
     </div>
     
     <div class="legend">
@@ -112,8 +119,9 @@
         <div class="legend-item legend-step">
             <strong>Steps:</strong> Processing steps that transform and validate data
             <ul style="margin: 5px 0; padding-left: 20px;">
-                <li><code>extract_invoice</code>: Calls invoice agent to extract vendor and amount</li>
+                <li><code>extract_invoice</code>: Calls invoice agent to extract vendor, amount, description, date, and invoice number</li>
                 <li><code>maybe_approve</code>: Applies approval logic with rules</li>
+                <li><code>write_invoice_to_general_ledger</code>: Creates and posts journal entry to GL system</li>
             </ul>
         </div>
         <div class="legend-item legend-rule">
@@ -125,8 +133,11 @@
         <div class="legend-item legend-decision">
             <strong>Decision Points:</strong> Conditional logic that determines workflow path
         </div>
+        <div class="legend-item legend-external">
+            <strong>External System:</strong> MockGeneralLedgerClient simulates API integration with GL systems (NetSuite, QuickBooks, etc.)
+        </div>
         <div class="legend-item legend-output">
-            <strong>Output:</strong> Final InvoiceData object (approved or rejected)
+            <strong>Output:</strong> Final JournalEntry object posted to general ledger
         </div>
     </div>
     
