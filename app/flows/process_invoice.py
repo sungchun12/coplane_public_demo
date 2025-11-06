@@ -24,13 +24,7 @@ class InvoiceData(BaseModel):
     invoice_number: str
 
 
-class InvoiceDataReviewed(BaseModel):
-    file: PlanarFile
-    vendor: str
-    amount: float
-    description: str
-    invoice_date: datetime
-    invoice_number: str
+class InvoiceDataReviewed(InvoiceData):
     approved: bool
 
 
