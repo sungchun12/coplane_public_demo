@@ -1,4 +1,3 @@
-from planar.human.models import HumanTaskResult
 from planar.ai import Agent
 from planar.files import PlanarFile
 from planar.human import Human
