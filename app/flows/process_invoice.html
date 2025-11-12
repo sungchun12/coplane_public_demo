@@ -54,6 +54,7 @@
         .legend-decision { border-color: #f39c12; background-color: #fff4e6; }
         .legend-output { border-color: #27ae60; background-color: #e8f8f0; }
         .legend-external { border-color: #3498db; background-color: #e8f4f8; }
+        .legend-function { border-color: #9b59b6; background-color: #f4ecf7; }
     </style>
 </head>
 <body>
@@ -69,18 +70,20 @@
             
             Agent --> MaybeApprove["<b>STEP: maybe_approve</b><br/>Apply approval logic"]
             
-            MaybeApprove --> AutoApprove["<b>RULE: auto_approve</b><br/>Check if amount < $1000"]
+            MaybeApprove --> AutoApprove["<b>RULE: auto_approver</b><br/>Check if amount < $1000"]
             
             AutoApprove --> Decision{Amount<br/>< $1000?}
             
-            Decision -->|Yes| PostGL["<b>STEP: write_invoice_to_general_ledger</b><br/>Post journal entry to GL system"]
+            Decision -->|Yes| PostGL["<b>STEP: write_invoice_to_general_ledger</b><br/>Create journal entry & Excel export"]
             Decision -->|No| HumanReview["<b>HUMAN: human_review</b><br/>Manual review required"]
             
             HumanReview --> ReviewDecision{Approved by<br/>reviewer?}
             ReviewDecision -->|Yes| PostGL
             ReviewDecision -->|No| Rejected[["<b>REJECTED</b><br/>Not approved by reviewer"]]
             
-            PostGL --> GLClient["<b>EXTERNAL: MockGeneralLedgerClient</b><br/>Simulates API call to<br/>General Ledger system"]
+            PostGL --> CreateExcel["<b>FUNCTION: create_journal_entry_excel</b><br/>Generate Excel workbook<br/>for accountant review"]
+            
+            CreateExcel --> GLClient["<b>EXTERNAL: MockGeneralLedgerClient</b><br/>Post journal entry to<br/>GL system API"]
             
             GLClient --> Success[["<b>SUCCESS</b><br/>Journal Entry Posted"]]
             
@@ -96,6 +99,7 @@
             classDef outputStyle fill:#27ae60,stroke:#1e8449,color:#fff,stroke-width:2px
             classDef endStyle fill:#95a5a6,stroke:#7f8c8d,color:#fff,stroke-width:2px
             classDef externalStyle fill:#3498db,stroke:#2874a6,color:#fff,stroke-width:2px
+            classDef functionStyle fill:#9b59b6,stroke:#7d3c98,color:#fff,stroke-width:2px
             
             class Start inputStyle
             class Agent agentStyle
@@ -106,6 +110,7 @@
             class Success,Rejected outputStyle
             class End endStyle
             class GLClient externalStyle
+            class CreateExcel functionStyle
     </div>
     
     <div class="legend">
@@ -121,11 +126,11 @@
             <ul style="margin: 5px 0; padding-left: 20px;">
                 <li><code>extract_invoice</code>: Calls invoice agent to extract vendor, amount, description, date, and invoice number</li>
                 <li><code>maybe_approve</code>: Applies approval logic with rules</li>
-                <li><code>write_invoice_to_general_ledger</code>: Creates and posts journal entry to GL system</li>
+                <li><code>write_invoice_to_general_ledger</code>: Creates journal entry with debit/credit lines, generates Excel workbook, and posts to GL system</li>
             </ul>
         </div>
         <div class="legend-item legend-rule">
-            <strong>Rule:</strong> <code>auto_approve</code> - Automatically approves invoices under $1,000
+            <strong>Rule:</strong> <code>auto_approver</code> - Automatically approves invoices under $1,000
         </div>
         <div class="legend-item legend-human">
             <strong>Human Review:</strong> Manual review required for invoices ≥ $1,000
@@ -133,11 +138,14 @@
         <div class="legend-item legend-decision">
             <strong>Decision Points:</strong> Conditional logic that determines workflow path
         </div>
+        <div class="legend-item legend-function">
+            <strong>Function:</strong> <code>create_journal_entry_excel</code> - Generates Excel workbook with 3 sheets (Summary, Details, NetSuite Import Format) for accountant review
+        </div>
         <div class="legend-item legend-external">
             <strong>External System:</strong> MockGeneralLedgerClient simulates API integration with GL systems (NetSuite, QuickBooks, etc.)
         </div>
         <div class="legend-item legend-output">
-            <strong>Output:</strong> Final JournalEntry object posted to general ledger
+            <strong>Output:</strong> JournalEntry object with Excel workbook attached, successfully posted to general ledger
         </div>
     </div>
     
