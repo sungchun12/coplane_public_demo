@@ -339,10 +339,14 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "planar" },
+    { name = "xlsxwriter" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "planar", specifier = "==0.14.0" }]
+requires-dist = [
+    { name = "planar", specifier = "==0.15.0" },
+    { name = "xlsxwriter", specifier = ">=3.2.9" },
+]
 
 [[package]]
 name = "croniter"
@@ -977,7 +981,7 @@ wheels = [
 
 [[package]]
 name = "planar"
-version = "0.14.0"
+version = "0.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1004,7 +1008,7 @@ dependencies = [
     { name = "zen-engine" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/9f/a68b857ed30a36225261d41892f215f42ffa70ba5661054452664da25d2d/planar-0.14.0-py3-none-any.whl", hash = "sha256:3fe24143f66ca9ca267f9d42fc343ffc076f61e4fb5ccaef249ca6529bf50367", size = 294685, upload-time = "2025-11-04T16:45:54.942Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/83/a5611a579203743751c07bdbd6111322f0c1feb415aaf396bc33af104e5e/planar-0.15.0-py3-none-any.whl", hash = "sha256:11e9d5a9e3ed671f140affe11aa2a70a99e173f2e0f8e0415a6cbaa322b77f51", size = 295392, upload-time = "2025-11-11T18:41:12.884Z" },
 ]
 
 [[package]]
@@ -1066,7 +1070,7 @@ wheels = [
 
 [[package]]
 name = "pydantic-ai-slim"
-version = "1.9.1"
+version = "1.14.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "genai-prices" },
@@ -1077,9 +1081,9 @@ dependencies = [
     { name = "pydantic-graph" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/ee/21d082fd6df2cb2da2d2ee8319da4f446e225b4fe226dc777c6db2e44e7b/pydantic_ai_slim-1.9.1.tar.gz", hash = "sha256:704490bc736d2ab31a403bbb04a3ec8e04010accd5a7ba9c8218395932240cd0", size = 296380, upload-time = "2025-10-31T02:43:44.975Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/6f/d1de5a46ba304eaadba68b4cf21c1d66e4698b672be129fc9e5ec490299e/pydantic_ai_slim-1.14.1.tar.gz", hash = "sha256:4f528eea81cdf49373e307df9314ae97b9574b340345ba4b7d013beabe9778c3", size = 299629, upload-time = "2025-11-12T00:28:15.406Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/a1/a49f5ba293083438a0f7050a9926702cbf25938b4799a7af05e95a8f4993/pydantic_ai_slim-1.9.1-py3-none-any.whl", hash = "sha256:2cbf53186e0bfb15b3347d299032cbb1c6355139af95cb7054552743d73213b7", size = 395513, upload-time = "2025-10-31T02:43:28.982Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/03/792efbfe321999714865c354df8c73e113b80d6a227ac050909765c4ed9f/pydantic_ai_slim-1.14.1-py3-none-any.whl", hash = "sha256:a9994e2942eaca6b0b312917e1778735d08e2dfbe7ed60e33fcc65edcbb58e39", size = 398946, upload-time = "2025-11-12T00:28:02.766Z" },
 ]
 
 [package.optional-dependencies]
@@ -1165,7 +1169,7 @@ wheels = [
 
 [[package]]
 name = "pydantic-graph"
-version = "1.9.1"
+version = "1.14.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1173,9 +1177,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/32/8fcf7eaf1cb8862928d694ce74daf076fe4a5f6739ba8474f5c4b8116a1a/pydantic_graph-1.9.1.tar.gz", hash = "sha256:fa766871084419ccaf5b7b73c42c6fa3743e1e00bec37d451875e7b1f93f7abe", size = 56929, upload-time = "2025-10-31T02:43:47.99Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/4e/222f07fe209b487da32fee9e832fc55cda57ccc713d2f52b6ce8925861a4/pydantic_graph-1.14.1.tar.gz", hash = "sha256:44f17620c63aa672873a19181996bc0037474ee231e92ea1a8fbf251114c2fad", size = 57978, upload-time = "2025-11-12T00:28:17.765Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/92/e9/026076f4737d788b170d14a0a6385e1c87846f603f0d85b74e972af7b0d7/pydantic_graph-1.9.1-py3-none-any.whl", hash = "sha256:183ca3ca99a5daa46781c5f91bf2f07294a42bb03b52cabf301e446d2e8d5380", size = 70915, upload-time = "2025-10-31T02:43:32.136Z" },
+    { url = "https://files.pythonhosted.org/packages/64/2a/2150d3435924b0368530887f4ec5b28cdada29cb7d7058d7031c63d41152/pydantic_graph-1.14.1-py3-none-any.whl", hash = "sha256:7e5db0f0c33bddc09e7a72af265b1988ea1e2ce9fc62adc2d73544ea16d28be4", size = 72004, upload-time = "2025-11-12T00:28:06.038Z" },
 ]
 
 [[package]]
@@ -1806,6 +1810,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/86/eb/20b6cdf273913d0ad05a6a14aed4b9a85591c18a987a3d47f20fa13dcc47/websockets-15.0.1-cp313-cp313-win32.whl", hash = "sha256:ba9e56e8ceeeedb2e080147ba85ffcd5cd0711b89576b83784d8605a7df455fa", size = 176393, upload-time = "2025-03-05T20:02:53.814Z" },
     { url = "https://files.pythonhosted.org/packages/1b/6c/c65773d6cab416a64d191d6ee8a8b1c68a09970ea6909d16965d26bfed1e/websockets-15.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561", size = 176837, upload-time = "2025-03-05T20:02:55.237Z" },
     { url = "https://files.pythonhosted.org/packages/fa/a8/5b41e0da817d64113292ab1f8247140aac61cbf6cfd085d6a0fa77f4984f/websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f", size = 169743, upload-time = "2025-03-05T20:03:39.41Z" },
+]
+
+[[package]]
+name = "xlsxwriter"
+version = "3.2.9"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/2c/c06ef49dc36e7954e55b802a8b231770d286a9758b3d936bd1e04ce5ba88/xlsxwriter-3.2.9.tar.gz", hash = "sha256:254b1c37a368c444eac6e2f867405cc9e461b0ed97a3233b2ac1e574efb4140c", size = 215940, upload-time = "2025-09-16T00:16:21.63Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3a/0c/3662f4a66880196a590b202f0db82d919dd2f89e99a27fadef91c4a33d41/xlsxwriter-3.2.9-py3-none-any.whl", hash = "sha256:9a5db42bc5dff014806c58a20b9eae7322a134abb6fce3c92c181bfb275ec5b3", size = 175315, upload-time = "2025-09-16T00:16:20.108Z" },
 ]
 
 [[package]]
