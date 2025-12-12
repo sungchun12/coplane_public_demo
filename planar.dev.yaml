@@ -18,11 +18,11 @@ security:
     allow_methods: ["*"]
     allow_headers: ["*"]
 
-ai_providers:
+ai_models:
   openai:
     api_key: ${OPENAI_API_KEY}
-  anthropic:
-    api_key: ${ANTHROPIC_API_KEY}
+  # anthropic:
+  #   api_key: ${ANTHROPIC_API_KEY}
 
 logging:
   planar:

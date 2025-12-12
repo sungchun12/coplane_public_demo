@@ -344,7 +344,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "planar", specifier = "==0.15.0" },
+    { name = "planar", specifier = "==0.20.2" },
     { name = "xlsxwriter", specifier = ">=3.2.9" },
 ]
 
@@ -981,7 +981,7 @@ wheels = [
 
 [[package]]
 name = "planar"
-version = "0.15.0"
+version = "0.20.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1008,7 +1008,7 @@ dependencies = [
     { name = "zen-engine" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/83/a5611a579203743751c07bdbd6111322f0c1feb415aaf396bc33af104e5e/planar-0.15.0-py3-none-any.whl", hash = "sha256:11e9d5a9e3ed671f140affe11aa2a70a99e173f2e0f8e0415a6cbaa322b77f51", size = 295392, upload-time = "2025-11-11T18:41:12.884Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/4b/d68d2f94f37ff5f6615cbcc87bbc9a06d0473b1ef0326c27d495e72fc478/planar-0.20.2-py3-none-any.whl", hash = "sha256:9b6cf957c2680da2a4fb75c1ac5ac1be822602521e76d88d7f94ca15a0feb446", size = 359946, upload-time = "2025-12-10T19:27:17.772Z" },
 ]
 
 [[package]]
