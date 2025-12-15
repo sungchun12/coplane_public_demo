@@ -42,7 +42,7 @@ class RuleOutput(BaseModel):
     approved: bool
     reason: str
 
-
+ 
 #### Input and Output Type Definitions ####
 
 
