@@ -1,6 +1,6 @@
 from planar import PlanarApp
 
-from app.db.entities import Invoice
+from app.db.entities import Invoice, ComplexInvoice
 from app.flows.process_invoice import process_invoice
 from app.flows.process_invoice import invoice_agent
 from app.flows.complex_invoice_process import complex_invoice_process
@@ -14,6 +14,7 @@ load_dotenv(".env.dev")
 app = (
     PlanarApp(title="coplane_public_demo")
     .register_entity(Invoice)
+    .register_entity(ComplexInvoice)
     .register_workflow(process_invoice)
     .register_agent(invoice_agent)
     .register_router(router, prefix="/actions")

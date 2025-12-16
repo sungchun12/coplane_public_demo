@@ -50,6 +50,8 @@ import tempfile
 import os
 import re
 from pathlib import Path
+from planar import get_session
+from app.db.entities import ComplexInvoice
 
 
 # ============================================================================
@@ -989,11 +991,46 @@ async def create_dynamics_sl_batch(
 
 
 # ============================================================================
+# Step: Save ComplexInvoice Entity
+# ============================================================================
+
+
+@step(display_name="Save ComplexInvoice Entity")
+async def save_complex_invoice_entity(
+    invoice_data: ExtractedInvoiceDataReviewed,
+) -> ComplexInvoice:
+    """Save the complex invoice to the database as an entity."""
+    session = get_session()
+    
+    complex_invoice = ComplexInvoice(
+        vendor=invoice_data.vendor,
+        company=invoice_data.company,
+        invoice_date=invoice_data.invoice_date,
+        invoice_amount=invoice_data.invoice_amount,
+        terms=invoice_data.terms,
+        invoice_currency=invoice_data.invoice_currency,
+        voucher_amount=invoice_data.voucher_amount,
+        pay_date=invoice_data.pay_date,
+        apply_date=invoice_data.apply_date,
+        due_date=invoice_data.due_date,
+        discount_date=invoice_data.discount_date,
+        discount=invoice_data.discount,
+        status="reviewed",
+        approved=invoice_data.approved,
+    )
+    
+    async with session.begin():
+        session.add(complex_invoice)
+    
+    return complex_invoice
+
+
+# ============================================================================
 # Main Workflow
 # ============================================================================
 
 
-@workflow()
+@workflow(is_interactive=True)
 async def complex_invoice_process() -> WorkflowResult:
     """Main workflow orchestrating the complete invoice processing pipeline."""
     # Step 1: Upload invoice file
@@ -1008,6 +1045,9 @@ async def complex_invoice_process() -> WorkflowResult:
     if not reviewed_data.approved:
         raise ValueError("Invoice data was not approved during review")
     
+    # Step 3.5: Save to database as entity
+    complex_invoice = await save_complex_invoice_entity(reviewed_data)
+    
     # Step 4: Export UnaNet data
     unanet_data = await export_unanet_data(reviewed_data)
     
@@ -1021,6 +1061,15 @@ async def complex_invoice_process() -> WorkflowResult:
     dynamics_batch = None
     if approval.approved:
         dynamics_batch = await create_dynamics_sl_batch(reviewed_data, approval)
+        
+        # Update entity with batch ID and final status
+        session = get_session()
+        async with session.begin():
+            # Merge the entity to ensure it's tracked in this session
+            complex_invoice = await session.merge(complex_invoice)
+            complex_invoice.batch_id = dynamics_batch.batch_id
+            complex_invoice.status = "completed"
+            complex_invoice.approved = True
     
     return WorkflowResult(
         invoice_data=reviewed_data,
