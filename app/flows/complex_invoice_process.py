@@ -48,6 +48,7 @@ import asyncio
 from xlsxwriter import Workbook
 import tempfile
 import os
+import re
 from pathlib import Path
 
 
@@ -640,7 +641,7 @@ async def create_dynamics_sl_batch_file(
     invoice_data: ExtractedInvoiceData,
     batch: DynamicsSLBatch,
 ) -> PlanarFile:
-    """Create Excel file with Dynamics SL batch entries."""
+    """Create Excel file with Dynamics SL Voucher and Adjustment Entry format."""
     temp_fd, temp_path = tempfile.mkstemp(suffix=".xlsx")
     os.close(temp_fd)
     
@@ -652,56 +653,269 @@ async def create_dynamics_sl_batch_file(
             "bold": True,
             "bg_color": "#D3D3D3",
             "border": 1,
-            "align": "center",
+            "align": "left",
+        })
+        
+        label_format = workbook.add_format({
+            "bold": True,
+            "bg_color": "#E6E6E6",
+            "border": 1,
+            "align": "left",
         })
         
         currency_format = workbook.add_format({"num_format": "$#,##0.00", "border": 1})
         date_format = workbook.add_format({"num_format": "mm/dd/yyyy", "border": 1})
         text_format = workbook.add_format({"border": 1, "align": "left"})
+        number_format = workbook.add_format({"num_format": "0", "border": 1, "align": "right"})
+        decimal_format = workbook.add_format({"num_format": "0.00", "border": 1, "align": "right"})
         
-        # Dynamics SL Import Format Sheet
-        dynamics = workbook.add_worksheet("Dynamics SL Import")
-        dynamics.set_column("A:H", 20)
+        # Main Voucher Entry Sheet
+        voucher = workbook.add_worksheet("Voucher Entry")
+        voucher.set_column("A:A", 15)
+        voucher.set_column("B:B", 25)
+        voucher.set_column("C:C", 15)
+        voucher.set_column("D:D", 25)
         
-        # Header
-        dynamics.write("A1", "*Batch Header", header_format)
-        dynamics.write("A2", "Batch ID", header_format)
-        dynamics.write("B2", "Batch Date", header_format)
-        dynamics.write("C2", "Description", header_format)
+        # Batch Section
+        row = 0
+        voucher.write(row, 0, "BATCH SECTION", header_format)
+        voucher.merge_range(f"A{row+1}:D{row+1}", "BATCH SECTION", header_format)
+        row += 1
         
+        voucher.write(row, 0, "Number:", label_format)
+        voucher.write(row, 1, batch.batch_id, text_format)
+        voucher.write(row, 2, "Per to Post:", label_format)
         batch_date_naive = (
             batch.batch_date.replace(tzinfo=None)
             if batch.batch_date.tzinfo
             else batch.batch_date
         )
-        dynamics.write("A3", batch.batch_id, text_format)
-        dynamics.write("B3", batch_date_naive, date_format)
-        dynamics.write("C3", f"Invoice Batch - {invoice_data.vendor}", text_format)
+        voucher.write(row, 3, batch_date_naive.strftime("%m-%Y"), text_format)
+        row += 1
         
-        # Transaction Lines
-        dynamics.write("A5", "*Transaction Lines", header_format)
-        headers = ["Transaction Date", "Account", "Description", "Debit", "Credit", "Project", "Vendor", "Invoice #"]
-        for col, header in enumerate(headers):
-            dynamics.write(5, col, header, header_format)
+        voucher.write(row, 0, "Entered By:", label_format)
+        voucher.write(row, 1, "SYSADMIN", text_format)
+        voucher.write(row, 2, "Status:", label_format)
+        voucher.write(row, 3, "Posted", text_format)
+        row += 1
         
-        row = 6
-        for entry in batch.entries:
-            entry_date_naive = (
-                entry.transaction_date.replace(tzinfo=None)
-                if entry.transaction_date.tzinfo
-                else entry.transaction_date
-            )
-            dynamics.write(row, 0, entry_date_naive, date_format)
-            dynamics.write(row, 1, entry.account_number, text_format)
-            dynamics.write(row, 2, entry.description, text_format)
-            if entry.debit > 0:
-                dynamics.write(row, 3, entry.debit, currency_format)
-            if entry.credit > 0:
-                dynamics.write(row, 4, entry.credit, currency_format)
-            if entry.project:
-                dynamics.write(row, 5, entry.project, text_format)
-            dynamics.write(row, 6, entry.vendor, text_format)
-            dynamics.write(row, 7, entry.invoice_number, text_format)
+        voucher.write(row, 0, "Handling:", label_format)
+        voucher.write(row, 1, "No Action", text_format)
+        voucher.write(row, 2, "Total:", label_format)
+        voucher.write(row, 3, invoice_data.invoice_amount, currency_format)
+        row += 1
+        
+        voucher.write(row, 0, "Control:", label_format)
+        voucher.write(row, 1, invoice_data.invoice_amount, currency_format)
+        row += 2
+        
+        # Document Section
+        voucher.write(row, 0, "DOCUMENT SECTION", header_format)
+        voucher.merge_range(f"A{row+1}:D{row+1}", "DOCUMENT SECTION", header_format)
+        row += 1
+        
+        # Generate reference number from batch ID
+        ref_nbr = batch.batch_id.split("-")[-1] if "-" in batch.batch_id else batch.batch_id[-6:]
+        if len(ref_nbr) < 6:
+            ref_nbr = ref_nbr.zfill(6)
+        
+        voucher.write(row, 0, "Ref Nbr:", label_format)
+        voucher.write(row, 1, ref_nbr, text_format)
+        voucher.write(row, 2, "Type:", label_format)
+        voucher.write(row, 3, "Voucher", text_format)
+        row += 1
+        
+        # Generate vendor ID from vendor name (first 8 chars, uppercase)
+        vendor_id = invoice_data.vendor[:8].upper().replace(" ", "")
+        if len(vendor_id) < 8:
+            vendor_id = vendor_id.ljust(8, "0")
+        
+        invoice_date_naive = (
+            invoice_data.invoice_date.replace(tzinfo=None)
+            if invoice_data.invoice_date.tzinfo
+            else invoice_data.invoice_date
+        )
+        
+        voucher.write(row, 0, "Vendor ID:", label_format)
+        voucher.write(row, 1, vendor_id, text_format)
+        voucher.write(row, 2, "Vendor Name:", label_format)
+        voucher.write(row, 3, invoice_data.vendor, text_format)
+        row += 1
+        
+        voucher.write(row, 0, "Date:", label_format)
+        voucher.write(row, 1, invoice_date_naive, date_format)
+        voucher.write(row, 2, "Invoice Nbr:", label_format)
+        # Extract invoice number from invoice data if available, otherwise generate
+        invoice_nbr = getattr(invoice_data, 'invoice_number', None) or f"INV{invoice_date_naive.strftime('%Y%m%d')}"
+        voucher.write(row, 3, invoice_nbr, text_format)
+        row += 1
+        
+        voucher.write(row, 0, "Invoice Date:", label_format)
+        voucher.write(row, 1, invoice_date_naive, date_format)
+        voucher.write(row, 2, "Balance:", label_format)
+        voucher.write(row, 3, invoice_data.invoice_amount, currency_format)
+        row += 1
+        
+        voucher.write(row, 0, "Subcontract:", label_format)
+        voucher.write(row, 1, "", text_format)
+        row += 2
+        
+        # Voucher/Adjustment Section
+        voucher.write(row, 0, "VOUCHER/ADJUSTMENT SECTION", header_format)
+        voucher.merge_range(f"A{row+1}:D{row+1}", "VOUCHER/ADJUSTMENT SECTION", header_format)
+        row += 1
+        
+        # Extract terms number (e.g., "Net 45" -> "45")
+        terms_number = "45"
+        if invoice_data.terms:
+            numbers = re.findall(r'\d+', invoice_data.terms)
+            if numbers:
+                terms_number = numbers[0]
+        
+        voucher.write(row, 0, "Terms:", label_format)
+        voucher.write(row, 1, terms_number, text_format)
+        voucher.write(row, 2, invoice_data.terms or f"Net {terms_number}", text_format)
+        row += 1
+        
+        voucher.write(row, 0, "Status:", label_format)
+        voucher.write(row, 1, "Active", text_format)
+        voucher.write(row, 2, "Amount:", label_format)
+        voucher.write(row, 3, invoice_data.invoice_amount, currency_format)
+        row += 1
+        
+        voucher.write(row, 0, "Discount:", label_format)
+        discount_amount = invoice_data.discount or 0.0
+        voucher.write(row, 1, discount_amount, currency_format)
+        voucher.write(row, 2, "Company ID:", label_format)
+        # Extract company ID from first line item or default to 10
+        company_id = invoice_data.voucher_line_items[0].company if invoice_data.voucher_line_items else "10"
+        # If company is a name, convert to ID (mock)
+        if not company_id.isdigit():
+            company_id = "10"
+        voucher.write(row, 3, company_id, text_format)
+        row += 1
+        
+        voucher.write(row, 0, "Company Name:", label_format)
+        voucher.write(row, 1, invoice_data.company, text_format)
+        voucher.write(row, 2, "PO Nbr:", label_format)
+        voucher.write(row, 3, "", text_format)
+        row += 1
+        
+        voucher.write(row, 0, "PO Receipt Nbr:", label_format)
+        voucher.write(row, 1, "", text_format)
+        voucher.write(row, 2, "Pre-Pay Nbr:", label_format)
+        voucher.write(row, 3, "", text_format)
+        row += 1
+        
+        voucher.write(row, 0, "EFT Account:", label_format)
+        voucher.write(row, 1, "MAIN", text_format)
+        voucher.write(row, 2, "Pay By:", label_format)
+        voucher.write(row, 3, "PPD", text_format)
+        row += 1
+        
+        discount_date = invoice_data.discount_date or invoice_date_naive
+        due_date = invoice_data.due_date or invoice_date_naive
+        pay_date = invoice_data.pay_date or invoice_data.apply_date or due_date
+        
+        discount_date_naive = (
+            discount_date.replace(tzinfo=None)
+            if discount_date.tzinfo
+            else discount_date
+        )
+        due_date_naive = (
+            due_date.replace(tzinfo=None)
+            if due_date.tzinfo
+            else due_date
+        )
+        pay_date_naive = (
+            pay_date.replace(tzinfo=None)
+            if pay_date.tzinfo
+            else pay_date
+        )
+        
+        voucher.write(row, 0, "Discount Date:", label_format)
+        voucher.write(row, 1, discount_date_naive, date_format)
+        voucher.write(row, 2, "Due Date:", label_format)
+        voucher.write(row, 3, due_date_naive, date_format)
+        row += 1
+        
+        voucher.write(row, 0, "Pay Date:", label_format)
+        voucher.write(row, 1, pay_date_naive, date_format)
+        row += 2
+        
+        # Detail Grid Section
+        voucher.write(row, 0, "DETAIL GRID", header_format)
+        voucher.merge_range(f"A{row+1}:L{row+1}", "DETAIL GRID", header_format)
+        row += 1
+        
+        # Detail grid headers
+        detail_headers = [
+            "Company ID", "Line Type", "Account", "Project", "Task",
+            "Employee ID", "Billable", "Subacct", "Invoice Qty",
+            "Inv Unit Price", "Inv Ext Price", "Description"
+        ]
+        
+        # Set column widths for detail grid
+        voucher.set_column("A:A", 12)  # Company ID
+        voucher.set_column("B:B", 12)  # Line Type
+        voucher.set_column("C:C", 12)  # Account
+        voucher.set_column("D:D", 25)  # Project
+        voucher.set_column("E:E", 25)  # Task
+        voucher.set_column("F:F", 12)  # Employee ID
+        voucher.set_column("G:G", 10)  # Billable
+        voucher.set_column("H:H", 15)  # Subacct
+        voucher.set_column("I:I", 12)  # Invoice Qty
+        voucher.set_column("J:J", 12)  # Inv Unit Price
+        voucher.set_column("K:K", 15)  # Inv Ext Price
+        voucher.set_column("L:L", 30)  # Description
+        
+        for col, header in enumerate(detail_headers):
+            voucher.write(row, col, header, header_format)
+        row += 1
+        
+        # Write voucher line items
+        for line_item in invoice_data.voucher_line_items:
+            # Company ID
+            company_id_val = line_item.company
+            if not company_id_val.isdigit():
+                company_id_val = "10"
+            voucher.write(row, 0, company_id_val, text_format)
+            
+            # Line Type
+            voucher.write(row, 1, line_item.line_type or "Invoice", text_format)
+            
+            # Account
+            voucher.write(row, 2, line_item.account_number, text_format)
+            
+            # Project
+            voucher.write(row, 3, line_item.project, text_format)
+            
+            # Task
+            voucher.write(row, 4, line_item.task or "", text_format)
+            
+            # Employee ID
+            voucher.write(row, 5, line_item.employee_id, text_format)
+            
+            # Billable
+            voucher.write(row, 6, "Yes" if line_item.billable else "No", text_format)
+            
+            # Subacct
+            voucher.write(row, 7, line_item.subaccount or "00-000-0000", text_format)
+            
+            # Invoice Qty (mock - calculate from hours if available)
+            invoice_qty = 0.00
+            voucher.write(row, 8, invoice_qty, decimal_format)
+            
+            # Inv Unit Price (mock - calculate from ext price and qty)
+            unit_price = 0.00
+            voucher.write(row, 9, unit_price, decimal_format)
+            
+            # Inv Ext Price
+            voucher.write(row, 10, line_item.invoice_ext_price, currency_format)
+            
+            # Description
+            voucher.write(row, 11, line_item.tran_description, text_format)
+            
             row += 1
         
         workbook.close()
@@ -710,7 +924,7 @@ async def create_dynamics_sl_batch_file(
         with open(temp_path, "rb") as f:
             file_content = f.read()
         
-        filename = f"dynamics_sl_batch_{batch.batch_id}_{batch.batch_date.strftime('%Y%m%d')}.xlsx"
+        filename = f"dynamics_sl_voucher_{batch.batch_id}_{batch.batch_date.strftime('%Y%m%d')}.xlsx"
         
         planar_file = await PlanarFile.upload(
             content=file_content,
@@ -730,40 +944,36 @@ async def create_dynamics_sl_batch(
     invoice_data: ExtractedInvoiceData,
     approval: APApprovalDecision,
 ) -> DynamicsSLBatch:
-    """Create batch of transaction entries for Microsoft Dynamics SL."""
+    """Create batch of voucher entries for Microsoft Dynamics SL.
+    
+    This creates a voucher entry with line items that will be ingested by Dynamics SL.
+    The voucher line items come directly from the invoice data.
+    """
     if not approval.approved:
         raise ValueError("Cannot create batch for unapproved invoice")
     
-    # Generate batch ID
-    batch_id = f"BATCH-{invoice_data.invoice_date.strftime('%Y%m%d')}-{invoice_data.vendor[:3].upper()}"
+    # Generate batch ID (6-digit number like in the image: 601820)
+    # Use a combination of date and vendor to create unique batch number
     batch_date = datetime.now()
+    batch_number = int(batch_date.strftime("%y%m%d")) * 10  # Generate 6-digit number
+    batch_id = str(batch_number)[:6]
     
+    # Create entries list - these represent the voucher line items
+    # In Dynamics SL, these are the detail grid entries, not journal entries
     entries = []
     
-    # Create expense entry (debit)
-    entries.append(DynamicsSLTransactionEntry(
-        batch_id=batch_id,
-        transaction_date=invoice_data.invoice_date,
-        account_number="6100-100",  # Mock account number
-        description=f"Invoice from {invoice_data.vendor}",
-        debit=invoice_data.invoice_amount,
-        credit=0.0,
-        project=invoice_data.voucher_line_items[0].project if invoice_data.voucher_line_items else None,
-        vendor=invoice_data.vendor,
-        invoice_number=f"INV-{invoice_data.invoice_date.strftime('%Y%m%d')}",
-    ))
-    
-    # Create accounts payable entry (credit)
-    entries.append(DynamicsSLTransactionEntry(
-        batch_id=batch_id,
-        transaction_date=invoice_data.invoice_date,
-        account_number="2000-100",  # Mock AP account
-        description=f"Accounts Payable - {invoice_data.vendor}",
-        debit=0.0,
-        credit=invoice_data.invoice_amount,
-        vendor=invoice_data.vendor,
-        invoice_number=f"INV-{invoice_data.invoice_date.strftime('%Y%m%d')}",
-    ))
+    for line_item in invoice_data.voucher_line_items:
+        entries.append(DynamicsSLTransactionEntry(
+            batch_id=batch_id,
+            transaction_date=invoice_data.invoice_date,
+            account_number=line_item.account_number,
+            description=line_item.tran_description,
+            debit=0.0,  # Voucher entries don't use debit/credit
+            credit=0.0,
+            project=line_item.project,
+            vendor=invoice_data.vendor,
+            invoice_number=getattr(invoice_data, 'invoice_number', None) or f"INV{invoice_data.invoice_date.strftime('%Y%m%d')}",
+        ))
     
     batch = DynamicsSLBatch(
         batch_id=batch_id,
@@ -771,7 +981,7 @@ async def create_dynamics_sl_batch(
         entries=entries,
     )
     
-    # Create and attach batch file
+    # Create and attach batch file with voucher entry format
     batch_file = await create_dynamics_sl_batch_file(invoice_data, batch)
     batch.batch_file = batch_file
     
